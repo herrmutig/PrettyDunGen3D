@@ -10,6 +10,7 @@ public partial class PrettyDunGen3DGenerator : Node3D
 {
     // Mainly used by rules during generation to act on category changes.
     // TODO later we could only autogenerate when a rule has been changed or any property...
+    // TODO Maybe add a Button on to the Godot Editor in order to generate.
     // TODO Kick out Y-Coordinate Dimension or do we keep it?
     public event Action<PrettyDunGen3DChunk> OnChunkCategoriesChanged;
     public PrettyDunGen3DGraph Graph { get; private set; }

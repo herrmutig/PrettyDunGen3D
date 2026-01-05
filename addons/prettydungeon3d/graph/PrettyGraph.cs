@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace PrettyDunGen3D
 {
+    // TODO Add RemoveNode, UpdateNode (?) maybe... if needed
     public class PrettyGraph<TNode>
     {
         // Lazy Initialization
@@ -20,7 +21,7 @@ namespace PrettyDunGen3D
 
         public bool HasNode(TNode node) => node != null && (AdjList?.ContainsKey(node) ?? false);
 
-        public void AddNode(TNode node)
+        public virtual void AddNode(TNode node)
         {
             if (!AdjList.ContainsKey(node))
             {
@@ -31,7 +32,7 @@ namespace PrettyDunGen3D
             throw new Exception("Node already exists, Skipping Insertion...");
         }
 
-        public void AddEdge(TNode from, TNode to, bool isDirected = false)
+        public virtual void AddEdge(TNode from, TNode to, bool isDirected = false)
         {
             if (from == null || to == null)
                 return;

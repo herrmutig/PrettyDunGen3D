@@ -3,21 +3,42 @@ using Godot.Collections;
 
 namespace PrettyDunGen3D;
 
-// TODO Create better Property Hints (GetPropertyList)
 // TODO Create Path Debugging in Here
-// TODO Add a shortcut to know what neighbours this chunk has
 // TODO Add Color Coding for Debugging (Basically rules can overwrite the color of the chunk / edge)
 
 [Tool]
 public partial class PrettyDunGen3DChunk : Node3D
 {
-    public Vector3I Coordinates { get; private set; }
-    public Vector3 Size { get; set; }
-    public Array<string> Categories => categories;
-    public PrettyDunGen3DGenerator Generator { get; private set; }
-
+    /// <summary>
+    /// Coordinates of this chunk assigned by the generator (Coordinates are distributed like a grid)
+    /// </summary>
+    [ExportGroup("Generated Values (Debugging)")]
     [Export]
-    private Array<string> categories = new();
+    public Vector3I Coordinates { get; private set; }
+
+    /// <summary>
+    /// World-space size of this chunk.
+    /// </summary>
+    [Export]
+    public Vector3 Size { get; set; }
+
+    /// <summary>
+    /// Category tags assigned to this chunk (e.g. "start", "boss", "treasure").
+    /// </summary>
+    [Export]
+    public Array<string> Categories { get; private set; } = new();
+
+    /// <summary>
+    /// Neighbouring chunks as determined by the current graph connectivity.
+    /// </summary>
+    [Export]
+    public Array<PrettyDunGen3DChunk> Neighbours { get; private set; } = new();
+
+    /// <summary>
+    /// The generator instance that owns this chunk.
+    /// </summary>
+    [Export]
+    public PrettyDunGen3DGenerator Generator { get; private set; }
 
     public PrettyDunGen3DChunk(PrettyDunGen3DGenerator generator, Vector3I coordinates)
     {
@@ -31,28 +52,41 @@ public partial class PrettyDunGen3DChunk : Node3D
 
     MeshInstance3D debugMeshInstance3D;
 
-    // TODO  use a Timer instead?
     public override void _PhysicsProcess(double delta)
     {
         if (Engine.IsEditorHint())
             DrawDebug();
     }
 
+    /// <summary>
+    /// Adds a category tag to this chunk.
+    /// <see langword="true"/> if the category was added; <see langword="false"/> if it already existed.
+    /// </returns>
     public bool AddCategory(string category)
     {
-        if (categories.Contains(category))
+        if (Categories.Contains(category))
             return false;
 
-        categories.Add(category);
+        Categories.Add(category);
         Generator.InformChunkCategoryChanged(this);
         return true;
     }
 
-    public bool ContainsCategory(string category) => categories.Contains(category);
+    /// <summary>
+    /// Checks whether this chunk has the given category tag.
+    /// </summary>
+    /// <returns><see langword="true"/> if the tag exists; otherwise <see langword="false"/>.</returns>
+    public bool ContainsCategory(string category) => Categories.Contains(category);
 
+    /// <summary>
+    /// Removes a category tag from this chunk.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> if the category was removed; <see langword="false"/> if it was not present.
+    /// </returns>
     public bool RemoveCategory(string category)
     {
-        if (categories.Remove(category))
+        if (Categories.Remove(category))
         {
             Generator.InformChunkCategoryChanged(this);
             return true;
@@ -60,7 +94,18 @@ public partial class PrettyDunGen3DChunk : Node3D
         return false;
     }
 
-    public void DrawDebug()
+    /// <summary>
+    /// Synchronizes inspector-visible data with the current graph state.
+    /// Called automatically by the graph when it adds a node or an edge.
+    /// </summary>
+    public void SyncWithGraph(PrettyDunGen3DGraph graph)
+    {
+        // Workaround to show Neighbours in inspector. (Can not be readonly unfortunately)
+        Neighbours.Clear();
+        Neighbours.AddRange(graph.GetNeighbours(this));
+    }
+
+    private void DrawDebug()
     {
         if (Generator.ShowDebug)
         {

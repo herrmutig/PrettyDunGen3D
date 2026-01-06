@@ -1,19 +1,23 @@
+using System.Linq;
 using Godot;
 using Godot.Collections;
 
 namespace PrettyDunGen3D;
 
-// TODO Optimize AStar Algorithm (Grid Generation should be smaller I think)
 [Tool]
 [GlobalClass]
 public partial class LoopPath3DRule : PrettyDunGen3DRule
 {
+    public enum AllowPathFindingOptions
+    {
+        Vertical,
+        Horizontal,
+        Both,
+    }
+
     [ExportGroup("General")]
     [Export]
     public string Category { get; set; } = "path:loop";
-
-    [Export(PropertyHint.Range, "1,20,1,or_greater")]
-    public int LoopKillCounter { get; set; } = 20;
 
     [ExportGroup("Path Connection")]
     [Export]
@@ -34,8 +38,13 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
     [Export]
     public int MaxEndChunkIndex { get; set; } = 2;
 
+    [ExportGroup("Advanced")]
     [Export(PropertyHint.Range, "0,3,,or_greater")]
     public int AStarGraphPadding { get; set; } = 1;
+
+    [Export]
+    public AllowPathFindingOptions AllowPathFindingOption { get; set; } =
+        AllowPathFindingOptions.Horizontal;
 
     [ExportGroup("Debug")]
     [Export]
@@ -82,6 +91,15 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
         PrettyDunGen3DChunk endChunk = EndPathRule.GetChunk(endIndex);
 
         AStar3D astar = InitializeAStar(graph, startChunk, endChunk);
+
+        if (
+            !astarLookupMap.ContainsKey(startChunk.Coordinates)
+            || !astarLookupMap.ContainsKey(endChunk.Coordinates)
+        )
+        {
+            return $"Start or End Coordinates are likely not allowed to perform path calculation. Consider changing '{nameof(AllowPathFindingOption)}'.";
+        }
+
         long startAStarId = astarLookupMap[startChunk.Coordinates];
         long endAStarId = astarLookupMap[endChunk.Coordinates];
 
@@ -104,6 +122,9 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
             }
         }
 
+        // Not needed but its always good to clean a bit of memory.
+        astarLookupMap.Clear();
+        astarLookupMap = null;
         return null;
     }
 
@@ -113,13 +134,84 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
         PrettyDunGen3DChunk endChunk
     )
     {
+        switch (AllowPathFindingOption)
+        {
+            case AllowPathFindingOptions.Vertical:
+                return VerticalAStarInitialization(graph, startChunk, endChunk);
+            case AllowPathFindingOptions.Horizontal:
+                return HorizontalAStarInitialization(graph, startChunk, endChunk);
+            default:
+                return FullAStarInitialization(graph, startChunk, endChunk);
+        }
+    }
+
+    private AStar3D VerticalAStarInitialization(
+        PrettyDunGen3DGraph graph,
+        PrettyDunGen3DChunk startChunk,
+        PrettyDunGen3DChunk endChunk
+    )
+    {
         graph.GetGraphBoundingBoxSize();
         AStar3D astar = new AStar3D();
         Vector3I min = GraphMinCoordinate - Vector3I.One * AStarGraphPadding;
         Vector3I max = GraphMaxCoordinate + Vector3I.One * AStarGraphPadding;
-        Vector3I size = max - min;
 
-        // Add Points + Padding (Imagine a grid)
+        for (int y = min.Y; y < max.Y; y++)
+        {
+            long nextId = astar.GetAvailablePointId();
+            Vector3I nextPoint = new Vector3I(0, y, 0);
+
+            astarLookupMap.Add(nextPoint, nextId);
+            astar.AddPoint(nextId, nextPoint);
+        }
+
+        DisableChunkPoints(ref astar, startChunk, endChunk);
+        ConnectAStarPoints(ref astar, [Vector3I.Up, Vector3I.Down]);
+
+        return astar;
+    }
+
+    private AStar3D HorizontalAStarInitialization(
+        PrettyDunGen3DGraph graph,
+        PrettyDunGen3DChunk startChunk,
+        PrettyDunGen3DChunk endChunk
+    )
+    {
+        graph.GetGraphBoundingBoxSize();
+        AStar3D astar = new AStar3D();
+        Vector3I min = GraphMinCoordinate - Vector3I.One * AStarGraphPadding;
+        Vector3I max = GraphMaxCoordinate + Vector3I.One * AStarGraphPadding;
+
+        for (int x = min.X; x < max.X; x++)
+        for (int z = min.Z; z < max.Z; z++)
+        {
+            long nextId = astar.GetAvailablePointId();
+            Vector3I nextPoint = new Vector3I(x, 0, z);
+
+            astarLookupMap.Add(nextPoint, nextId);
+            astar.AddPoint(nextId, nextPoint);
+        }
+
+        DisableChunkPoints(ref astar, startChunk, endChunk);
+        ConnectAStarPoints(
+            ref astar,
+            [Vector3I.Right, Vector3I.Left, Vector3I.Forward, Vector3I.Back]
+        );
+
+        return astar;
+    }
+
+    private AStar3D FullAStarInitialization(
+        PrettyDunGen3DGraph graph,
+        PrettyDunGen3DChunk startChunk,
+        PrettyDunGen3DChunk endChunk
+    )
+    {
+        graph.GetGraphBoundingBoxSize();
+        AStar3D astar = new AStar3D();
+        Vector3I min = GraphMinCoordinate - Vector3I.One * AStarGraphPadding;
+        Vector3I max = GraphMaxCoordinate + Vector3I.One * AStarGraphPadding;
+
         for (int x = min.X; x < max.X; x++)
         for (int y = min.Y; y < max.Y; y++)
         for (int z = min.Z; z < max.Z; z++)
@@ -131,37 +223,48 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
             astar.AddPoint(nextId, nextPoint);
         }
 
-        foreach (var chunk in graph.GetNodes())
+        DisableChunkPoints(ref astar, startChunk, endChunk);
+        ConnectAStarPoints(
+            ref astar,
+            [
+                Vector3I.Right,
+                Vector3I.Left,
+                Vector3I.Up,
+                Vector3I.Down,
+                Vector3I.Forward,
+                Vector3I.Back,
+            ]
+        );
+
+        return astar;
+    }
+
+    private void DisableChunkPoints(ref AStar3D astar, params PrettyDunGen3DChunk[] skippedChunks)
+    {
+        foreach (var chunk in generator.Graph.GetNodes())
         {
-            if (chunk == startChunk || chunk == endChunk)
+            if (skippedChunks.Contains(chunk))
+                continue;
+            if (!astarLookupMap.ContainsKey(chunk.Coordinates))
                 continue;
 
             long lookupId = astarLookupMap[chunk.Coordinates];
             astar.SetPointDisabled(lookupId);
         }
+    }
 
+    private void ConnectAStarPoints(ref AStar3D astar, params Vector3I[] directions)
+    {
         foreach (long pointId in astar.GetPointIds())
         {
             Vector3I closestCoordinate = (Vector3I)astar.GetPointPosition(pointId);
-            Vector3I[] lookupCoordinates =
-            [
-                closestCoordinate + Vector3I.Right,
-                closestCoordinate + Vector3I.Left,
-                closestCoordinate + Vector3I.Up,
-                closestCoordinate + Vector3I.Down,
-                closestCoordinate + Vector3I.Forward,
-                closestCoordinate + Vector3I.Back,
-            ];
+            Vector3I[] lookupCoordinates = directions.Select(d => closestCoordinate + d).ToArray();
 
             foreach (Vector3I possibleConnection in lookupCoordinates)
             {
                 if (astarLookupMap.ContainsKey(possibleConnection))
-                {
                     astar.ConnectPoints(pointId, astarLookupMap[possibleConnection]);
-                }
             }
         }
-
-        return astar;
     }
 }

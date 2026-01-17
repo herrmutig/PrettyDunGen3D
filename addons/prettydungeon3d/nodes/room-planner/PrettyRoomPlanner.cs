@@ -1,0 +1,112 @@
+using System.Data;
+using System.Linq;
+using Godot;
+using Godot.Collections;
+
+namespace PrettyDunGen3D;
+
+[GlobalClass]
+[Tool]
+public partial class PrettyRoomPlanner : Node3D
+{
+    [ExportGroup("General")]
+    [Export]
+    public Vector3 Size { get; set; } = Vector3.One * 2f;
+
+    [Export]
+    public Array<PrettyRoomResource> RoomResources { get; set; } = new();
+
+    [Export]
+    public PrettyRoomPlannerRuleSet RuleSet { get; set; }
+
+    [ExportGroup("Generation")]
+    [ExportToolButton("Generate!")]
+    Callable GenerateButton => Callable.From(Generate);
+
+    [ExportToolButton("Clear")]
+    Callable ClearGenerationButton => Callable.From(FreeGeneration);
+
+    [ExportGroup("Debugging")]
+    [Export]
+    public Dictionary<string, Array<Node>> SceneInstanceDictionary = new();
+
+    public override void _Ready()
+    {
+        if (HasMeta("pd3d_chunk"))
+        {
+            PrettyDunGen3DChunk chunk = (PrettyDunGen3DChunk)GetMeta("pd3d_chunk");
+            Size = chunk.Size;
+            Generate();
+        }
+    }
+
+    public void Generate()
+    {
+        FreeGeneration();
+
+        if (RuleSet == null)
+            RuleSet = new();
+        if (SceneInstanceDictionary == null)
+            SceneInstanceDictionary = new();
+
+        foreach (var rule in RuleSet.Rules)
+        {
+            rule.Execute(this);
+
+            if (Engine.IsEditorHint())
+            {
+                rule.DrawDebug();
+            }
+        }
+    }
+
+    public void FreeGeneration()
+    {
+        if (SceneInstanceDictionary == null)
+            SceneInstanceDictionary = new();
+
+        foreach (var kvp in SceneInstanceDictionary)
+        {
+            foreach (var sceneInstance in kvp.Value)
+            {
+                if (sceneInstance != null && !sceneInstance.IsQueuedForDeletion())
+                {
+                    sceneInstance.QueueFree();
+                }
+            }
+        }
+
+        SceneInstanceDictionary.Clear();
+    }
+
+    public PrettyRoomResource GetRandomRoomResource(string roomResourceCategory = "")
+    {
+        if (string.IsNullOrWhiteSpace(roomResourceCategory))
+            return RoomResources.PickRandom();
+
+        Array<PrettyRoomResource> filtered =
+        [
+            .. RoomResources.Where((rr) => rr.Category == roomResourceCategory),
+        ];
+
+        return filtered.PickRandom();
+    }
+
+    public void AddSceneInstance(string category, Node instance)
+    {
+        if (!instance.IsInsideTree())
+            AddChild(instance);
+
+        if (!SceneInstanceDictionary.ContainsKey(category))
+        {
+            SceneInstanceDictionary.Add(category, [instance]);
+            return;
+        }
+
+        var instances = SceneInstanceDictionary[category];
+        if (instances.Contains(instance))
+            return;
+
+        SceneInstanceDictionary[category].Add(instance);
+    }
+}

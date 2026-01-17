@@ -142,11 +142,15 @@ public partial class PrettyDunGen3DChunk : Node3D
         Vector3 combinedHalfExtent = chunk.Size * 0.5f + Size * 0.5f;
         Vector3 deltaDir = chunk.GlobalPosition - GlobalPosition;
 
-        float xDirection = Mathf.Sign(deltaDir.X) * (Mathf.Abs(deltaDir.X) - combinedHalfExtent.X);
-        float yDirection = Mathf.Sign(deltaDir.Y) * (Mathf.Abs(deltaDir.Y) - combinedHalfExtent.Y);
-        float zDirection = Mathf.Sign(deltaDir.Z) * (Mathf.Abs(deltaDir.Z) - combinedHalfExtent.Z);
+        return deltaDir.Sign() * (deltaDir.Abs() - combinedHalfExtent);
+    }
 
-        return new Vector3(xDirection, yDirection, zDirection);
+    private Vector3 GetConnectorCenter(PrettyDunGen3DChunk neighbour)
+    {
+        Vector3 distance = GetDistanceVectorTo(neighbour);
+        Vector3 halfExtent = Size * 0.5f;
+
+        return GlobalPosition + (halfExtent * distance.Sign()) + distance * 0.5f;
     }
 
     private void UpdateNeighbourDistances()
@@ -201,6 +205,7 @@ public partial class PrettyDunGen3DChunk : Node3D
     public void SyncWithGraph(PrettyDunGen3DGraph graph)
     {
         // Workaround to show Neighbours in inspector. (Can not be readonly unfortunately)
+        // Note: This is BTW super helpful to update connection points (Corridors)
         Neighbours.Clear();
         Neighbours.AddRange(graph.GetNeighbours(this));
     }
@@ -219,9 +224,14 @@ public partial class PrettyDunGen3DChunk : Node3D
         var graph = Generator.Graph;
 
         // Draw Chunk
+        DebugDraw3D.DrawText(GlobalPosition - Vector3.One, "INDEX: " + graph.GetIndexOf(this), 64);
         DebugDraw3D.ScopedConfig().SetThickness(0.05f);
+
+        // ROOM
         DebugDraw3D.DrawBox(GlobalPosition, Quaternion.Identity, Size, ChunkDebugColor, true);
         DebugDraw3D.ScopedConfig().SetThickness(0.05f);
+
+        // CENTER BOX
         DebugDraw3D.DrawBox(
             GlobalPosition,
             Quaternion.Identity,
@@ -237,6 +247,25 @@ public partial class PrettyDunGen3DChunk : Node3D
             if (graph.GetIndexOf(this) < graph.GetIndexOf(neighbour))
                 continue;
 
+            // Draw Connectors
+            Vector3 distToNeighbour = GetDistanceVectorTo(neighbour);
+
+            // TODO Randomize Size:
+            Vector3 neighbourSize =
+                Mathf.Abs(distToNeighbour.X) > 0.01
+                    ? new Vector3(distToNeighbour.X, 2, 2)
+                    : new Vector3(2, 2, distToNeighbour.Z);
+
+            DebugDraw3D.DrawBox(
+                GetConnectorCenter(neighbour),
+                Quaternion.Identity,
+                neighbourSize,
+                PathDebugColor,
+                true
+            );
+            DebugDraw3D.ScopedConfig().SetThickness(0.05f);
+
+            // Draw Path
             DebugDraw3D.ScopedConfig().SetThickness(0.2f);
             DebugDraw3D.DrawLine(GlobalPosition, neighbour.GlobalPosition, PathDebugColor, 0.2f);
         }

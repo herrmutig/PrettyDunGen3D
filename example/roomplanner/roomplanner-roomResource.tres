@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PrettyRoomResource" load_steps=3 format=3 uid="uid://c0425ssn5n01f"]
+
+[ext_resource type="PackedScene" uid="uid://bfdg54h6dyl4o" path="res://example/roomplanner/test_cube.tscn" id="1_svdrf"]
+[ext_resource type="Script" uid="uid://dynxk7uudg0t8" path="res://addons/prettydungeon3d/nodes/room-planner/PrettyRoomResource.cs" id="2_6i1b6"]
+
+[resource]
+script = ExtResource("2_6i1b6")
+Category = "floor"
+Scenes = Array[PackedScene]([ExtResource("1_svdrf")])
+metadata/_custom_type_script = "uid://dynxk7uudg0t8"

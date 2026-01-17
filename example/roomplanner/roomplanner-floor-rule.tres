@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="FillFloorRule" load_steps=2 format=3 uid="uid://d4nnruy1qtvt1"]
+
+[ext_resource type="Script" uid="uid://c3u0hmy1juimj" path="res://addons/prettydungeon3d/nodes/room-planner/rules/FillFloorRule.cs" id="1_ldi3u"]
+
+[resource]
+script = ExtResource("1_ldi3u")
+metadata/_custom_type_script = "uid://c3u0hmy1juimj"

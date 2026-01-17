@@ -156,10 +156,13 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
         Vector3I min = GraphMinCoordinate - Vector3I.One * AStarGraphPadding;
         Vector3I max = GraphMaxCoordinate + Vector3I.One * AStarGraphPadding;
 
+        int x = startChunk.Coordinates.X;
+        int z = startChunk.Coordinates.Z;
+
         for (int y = min.Y; y < max.Y; y++)
         {
             long nextId = astar.GetAvailablePointId();
-            Vector3I nextPoint = new Vector3I(0, y, 0);
+            Vector3I nextPoint = new Vector3I(x, y, z);
 
             astarLookupMap.Add(nextPoint, nextId);
             astar.AddPoint(nextId, nextPoint);
@@ -182,11 +185,13 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
         Vector3I min = GraphMinCoordinate - Vector3I.One * AStarGraphPadding;
         Vector3I max = GraphMaxCoordinate + Vector3I.One * AStarGraphPadding;
 
+        int y = startChunk.Coordinates.Y;
+
         for (int x = min.X; x < max.X; x++)
         for (int z = min.Z; z < max.Z; z++)
         {
             long nextId = astar.GetAvailablePointId();
-            Vector3I nextPoint = new Vector3I(x, 0, z);
+            Vector3I nextPoint = new Vector3I(x, y, z);
 
             astarLookupMap.Add(nextPoint, nextId);
             astar.AddPoint(nextId, nextPoint);

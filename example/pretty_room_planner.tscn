@@ -1,0 +1,13 @@
+[gd_scene load_steps=5 format=3 uid="uid://d0ol1koudny6f"]
+
+[ext_resource type="Script" uid="uid://ct856jd6jsx84" path="res://addons/prettydungeon3d/nodes/room-planner/PrettyRoomPlanner.cs" id="1_w1im5"]
+[ext_resource type="Script" uid="uid://dynxk7uudg0t8" path="res://addons/prettydungeon3d/nodes/room-planner/PrettyRoomResource.cs" id="2_ei7fy"]
+[ext_resource type="Resource" uid="uid://c0425ssn5n01f" path="res://example/roomplanner/roomplanner-roomResource.tres" id="3_kwk8q"]
+[ext_resource type="Resource" uid="uid://b1jp0eg0g1xfh" path="res://example/roomplanner/roomplanner-ruleset.tres" id="4_ei7fy"]
+
+[node name="PrettyRoomPlanner" type="Node3D"]
+script = ExtResource("1_w1im5")
+Size = Vector3(5, 2, 5)
+RoomResources = Array[ExtResource("2_ei7fy")]([ExtResource("3_kwk8q")])
+RuleSet = ExtResource("4_ei7fy")
+metadata/_custom_type_script = "uid://ct856jd6jsx84"

@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="WallRule" load_steps=2 format=3 uid="uid://cxwk4st8stmki"]
+
+[ext_resource type="Script" uid="uid://dnocvoa8u50o2" path="res://addons/prettydungeon3d/nodes/room-planner/rules/WallRule.cs" id="1_5lry1"]
+
+[resource]
+script = ExtResource("1_5lry1")
+metadata/_custom_type_script = "uid://dnocvoa8u50o2"

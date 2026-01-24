@@ -16,9 +16,6 @@ public partial class PrettyRoomPlanner : Node3D
     [Export]
     public Array<PrettyRoomResource> RoomResources { get; set; } = new();
 
-    [Export]
-    public PrettyRoomPlannerRuleSet RuleSet { get; set; }
-
     [ExportGroup("Generation")]
     [ExportToolButton("Generate!")]
     Callable GenerateButton => Callable.From(Generate);
@@ -44,19 +41,13 @@ public partial class PrettyRoomPlanner : Node3D
     {
         FreeGeneration();
 
-        if (RuleSet == null)
-            RuleSet = new();
         if (SceneInstanceDictionary == null)
             SceneInstanceDictionary = new();
 
-        foreach (var rule in RuleSet.Rules)
+        foreach (var child in GetChildren())
         {
-            rule.Execute(this);
-
-            if (Engine.IsEditorHint())
-            {
-                rule.DrawDebug();
-            }
+            if (child is PrettyPlannerRule plannerRule)
+                plannerRule.Execute(this);
         }
     }
 

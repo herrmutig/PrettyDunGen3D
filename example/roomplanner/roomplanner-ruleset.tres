@@ -1,14 +1,16 @@
-[gd_resource type="Resource" script_class="PrettyRoomPlannerRuleSet" load_steps=5 format=3 uid="uid://b1jp0eg0g1xfh"]
+[gd_resource type="Resource" script_class="PrettyRoomPlannerRuleSet" load_steps=6 format=3 uid="uid://b1jp0eg0g1xfh"]
 
 [ext_resource type="Script" uid="uid://bpr23410s7km6" path="res://addons/prettydungeon3d/nodes/room-planner/PrettyRoomPlannerRule.cs" id="1_fbp66"]
 [ext_resource type="Script" uid="uid://c3u0hmy1juimj" path="res://addons/prettydungeon3d/nodes/room-planner/rules/FillFloorRule.cs" id="2_fbp66"]
+[ext_resource type="Resource" uid="uid://cxwk4st8stmki" path="res://example/roomplanner/wall-rule.tres" id="3_8dix7"]
 [ext_resource type="Script" uid="uid://be2w675tfo762" path="res://addons/prettydungeon3d/nodes/room-planner/PrettyRoomPlannerRuleSet.cs" id="3_ow68c"]
 
 [sub_resource type="Resource" id="Resource_8dix7"]
 script = ExtResource("2_fbp66")
+ShowDebug = true
 metadata/_custom_type_script = "uid://c3u0hmy1juimj"
 
 [resource]
 script = ExtResource("3_ow68c")
-Rules = Array[ExtResource("1_fbp66")]([SubResource("Resource_8dix7")])
+Rules = Array[ExtResource("1_fbp66")]([SubResource("Resource_8dix7"), ExtResource("3_8dix7")])
 metadata/_custom_type_script = "uid://be2w675tfo762"

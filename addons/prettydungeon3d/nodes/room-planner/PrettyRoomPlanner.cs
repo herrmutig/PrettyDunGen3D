@@ -29,9 +29,9 @@ public partial class PrettyRoomPlanner : Node3D
 
     public override void _Ready()
     {
-        if (HasMeta("pd3d_size"))
+        if (HasMeta(MetaDataUtility.METADATA_CHUNK_SIZE))
         {
-            Size = (Vector3)GetMeta("pd3d_size");
+            Size = (Vector3)GetMeta(MetaDataUtility.METADATA_CHUNK_SIZE);
             Generate();
         }
     }

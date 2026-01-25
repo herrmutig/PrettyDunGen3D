@@ -12,6 +12,7 @@ public partial class PrettyDunGen3DGenerator : Node3D
     // TODO later we could only autogenerate when a rule has been changed or any property...
     // TODO Maybe add a Button on to the Godot Editor in order to generate.
     // TODO Kick out Y-Coordinate Dimension or do we keep it?
+    // TODO Add a Rule to manipule Sizes of Connectors.
     public event Action<PrettyDunGen3DChunk> OnChunkCategoriesChanged;
     public PrettyDunGen3DGraph Graph { get; private set; }
     public Array<PrettyDunGen3DRule> Rules { get; private set; }
@@ -36,6 +37,9 @@ public partial class PrettyDunGen3DGenerator : Node3D
     [Export(PropertyHint.Range, "0,20,,or_greater")]
     public Vector3 DefaultChunkOffset { get; set; } = new Vector3(1.5f, 0f, 1.5f);
 
+    [Export]
+    public Vector3 DefaultChunkConnectorWidth { get; set; } = new Vector3(3, 1, 3);
+
     [ExportToolButton("Generate!")]
     Callable GenerateButton => Callable.From(Generate);
 
@@ -56,7 +60,6 @@ public partial class PrettyDunGen3DGenerator : Node3D
     public bool ShowGenerationWarnings { get; set; } = true;
 
     RandomNumberGenerator numberGenerator;
-    Node3D generationContainer;
     Timer debugAutoGenerationTimer;
 
     public override void _Ready()
@@ -89,32 +92,38 @@ public partial class PrettyDunGen3DGenerator : Node3D
 
     public void FreeGeneration()
     {
-        foreach (var node in GetChildren())
+        if (Graph == null)
+            Graph = new(this);
+
+        foreach (var node in Graph.GetNodes())
         {
-            if (node is PrettyDunGen3DChunk)
+            RemoveChild(node);
+            foreach (var connector in node.Connectors)
             {
-                RemoveChild(node);
-                node.QueueFree();
+                if (!connector.IsQueuedForDeletion())
+                    connector.QueueFree();
             }
+
+            node.QueueFree();
         }
 
-        if (generationContainer != null)
+        // Final Deletion Pass in case of reference losses due to e.g. recompiling
+        foreach (var child in GetChildren())
         {
-            RemoveChild(generationContainer);
-            generationContainer.QueueFree();
-            generationContainer = null;
+            if (child.IsQueuedForDeletion())
+                continue;
+
+            if (child is PrettyDunGen3DChunk || child is PrettyDunGen3DChunkConnector)
+                child.QueueFree();
         }
 
-        if (Graph != null)
-        {
-            Graph.Clear();
-        }
+        Graph.Clear();
     }
 
     public void Generate()
     {
         if (Graph == null)
-            Graph = new();
+            Graph = new(this);
         if (Rules == null)
             Rules = new();
 
@@ -190,13 +199,11 @@ public partial class PrettyDunGen3DGenerator : Node3D
         {
             chunk = new PrettyDunGen3DChunk(this, coordinates);
             Graph.AddNode(chunk);
-            AddChild(chunk);
+
+            // Note: Below works because Graph also adds the Chunk to this generators Child-List.
             chunk.Resize(DefaultChunkSize, DefaultChunkOffset);
             chunk.Rotation = Vector3.Zero;
             chunk.Scale = Vector3.One;
-
-            if (PersistGenerated)
-                chunk.Owner = this;
         }
 
         return chunk;

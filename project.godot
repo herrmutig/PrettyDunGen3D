@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="PrettyDunGen3D"
+run/main_scene="uid://cc0otup3277a"
 config/features=PackedStringArray("4.5", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 

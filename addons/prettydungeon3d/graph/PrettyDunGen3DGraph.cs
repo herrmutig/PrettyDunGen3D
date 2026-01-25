@@ -5,9 +5,16 @@ namespace PrettyDunGen3D;
 
 public class PrettyDunGen3DGraph : PrettyGraph<PrettyDunGen3DChunk>
 {
+    public PrettyDunGen3DGenerator Generator { get; private set; }
+
     public PrettyDunGen3DChunk GetNodeAtCoordinate(Vector3I coordinates)
     {
         return AdjList.Keys.FirstOrDefault(node => node.Coordinates == coordinates);
+    }
+
+    public PrettyDunGen3DGraph(PrettyDunGen3DGenerator generator)
+    {
+        Generator = generator;
     }
 
     public Vector3I GetGraphBoundingBoxSize()
@@ -64,14 +71,43 @@ public class PrettyDunGen3DGraph : PrettyGraph<PrettyDunGen3DChunk>
         bool isDirected = false
     )
     {
+        if (Generator == null || Generator.IsQueuedForDeletion())
+        {
+            GD.PushError("Can not add edge to graph. No Generator was specified");
+            return;
+        }
+
         base.AddEdge(from, to, isDirected);
+
+        if (from.GetConnector(to) == null)
+        {
+            var connector = new PrettyDunGen3DChunkConnector(Generator, from, to);
+            from.AddConnector(connector);
+            to.AddConnector(connector);
+            Generator.AddChild(connector);
+
+            if (Generator.PersistGenerated)
+                connector.Owner = Generator;
+        }
+
         from.SyncWithGraph(this);
         to.SyncWithGraph(this);
     }
 
     public override void AddNode(PrettyDunGen3DChunk node)
     {
+        if (Generator == null || Generator.IsQueuedForDeletion())
+        {
+            GD.PushError("Can not add Node to graph. No Generator was specified");
+            return;
+        }
+
         base.AddNode(node);
+        Generator.AddChild(node);
+
+        if (Generator.PersistGenerated)
+            node.Owner = Generator;
+
         node.SyncWithGraph(this);
     }
 }

@@ -39,6 +39,9 @@ public partial class Path3DRule : PrettyDunGen3DRule
     public string Category { get; set; } = "path:main";
 
     [Export]
+    public bool AddCategoryToChunkMetaData { get; set; } = true;
+
+    [Export]
     public PathConflictStrategy ConflictStrategy { get; set; } =
         PathConflictStrategy.ConnectToExistingPath;
 
@@ -114,7 +117,10 @@ public partial class Path3DRule : PrettyDunGen3DRule
         if (errorMessage != null)
             return errorMessage;
 
-        MarkPathConnected(lastChunk, Category);
+        MarkChunkConnected(lastChunk, Category);
+
+        if (!lastChunk.HasMeta(MetaDataUtility.METADATA_PATH_CATEGORY))
+            lastChunk.SetMeta(MetaDataUtility.METADATA_PATH_CATEGORY, Category);
 
         // Building the Path
         for (int i = 0; i < pathLength; i++)
@@ -127,7 +133,17 @@ public partial class Path3DRule : PrettyDunGen3DRule
             }
 
             graph.AddEdge(lastChunk, nextChunk);
-            MarkPathConnected(nextChunk, Category);
+            MarkChunkConnected(nextChunk, Category);
+            if (AddCategoryToChunkMetaData)
+            {
+                if (!nextChunk.HasMeta(MetaDataUtility.METADATA_PATH_CATEGORY))
+                    nextChunk.SetMeta(MetaDataUtility.METADATA_PATH_CATEGORY, Category);
+
+                var connector = lastChunk.GetConnector(nextChunk);
+                if (!connector.HasMeta(MetaDataUtility.METADATA_PATH_CATEGORY))
+                    connector.SetMeta(MetaDataUtility.METADATA_PATH_CATEGORY, Category);
+            }
+
             lastChunk = nextChunk;
         }
 
@@ -235,7 +251,7 @@ public partial class Path3DRule : PrettyDunGen3DRule
             if (adjChunk.ContainsCategory(Category))
             {
                 graph.AddEdge(adjChunk, chunk);
-                MarkPathConnected(chunk, Category);
+                MarkChunkConnected(chunk, Category);
             }
         }
     }
@@ -361,7 +377,7 @@ public partial class Path3DRule : PrettyDunGen3DRule
         return $"StartOption '{pathStartOption}' is not supported.";
     }
 
-    private void MarkPathConnected(PrettyDunGen3DChunk chunk, string category)
+    private void MarkChunkConnected(PrettyDunGen3DChunk chunk, string category)
     {
         if (!markedChunks.Contains(chunk))
             markedChunks.Add(chunk);

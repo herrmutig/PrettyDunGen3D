@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Godot;
 using Godot.Collections;
@@ -18,6 +19,9 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
     [ExportGroup("General")]
     [Export]
     public string Category { get; set; } = "path:loop";
+
+    [Export]
+    public bool AddCategoryToChunkMetaData { get; set; } = true;
 
     [ExportGroup("Path Connection")]
     [Export]
@@ -118,6 +122,17 @@ public partial class LoopPath3DRule : PrettyDunGen3DRule
                 newChunk.AddCategory(Category);
                 newChunk.Name += $"|{Name}";
                 newChunk.PathDebugColor = PathColor;
+
+                if (AddCategoryToChunkMetaData)
+                {
+                    if (!newChunk.HasMeta(MetaDataUtility.METADATA_PATH_CATEGORY))
+                        newChunk.SetMeta(MetaDataUtility.METADATA_PATH_CATEGORY, Category);
+
+                    var connector = previousChunk.GetConnector(newChunk);
+                    if (!connector.HasMeta(MetaDataUtility.METADATA_PATH_CATEGORY))
+                        connector.SetMeta(MetaDataUtility.METADATA_PATH_CATEGORY, Category);
+                }
+
                 previousChunk = newChunk;
             }
         }

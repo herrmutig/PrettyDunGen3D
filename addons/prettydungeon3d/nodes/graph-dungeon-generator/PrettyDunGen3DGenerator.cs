@@ -56,7 +56,6 @@ public partial class PrettyDunGen3DGenerator : Node3D
     public bool ShowGenerationWarnings { get; set; } = true;
 
     RandomNumberGenerator numberGenerator;
-    Node3D generationContainer;
     Timer debugAutoGenerationTimer;
 
     public override void _Ready()
@@ -89,32 +88,28 @@ public partial class PrettyDunGen3DGenerator : Node3D
 
     public void FreeGeneration()
     {
-        foreach (var node in GetChildren())
+        if (Graph == null)
+            Graph = new(this);
+
+        foreach (var node in Graph.GetNodes())
         {
-            if (node is PrettyDunGen3DChunk)
+            RemoveChild(node);
+            foreach (var connector in node.Connectors)
             {
-                RemoveChild(node);
-                node.QueueFree();
+                if (!connector.IsQueuedForDeletion())
+                    connector.QueueFree();
             }
+
+            node.QueueFree();
         }
 
-        if (generationContainer != null)
-        {
-            RemoveChild(generationContainer);
-            generationContainer.QueueFree();
-            generationContainer = null;
-        }
-
-        if (Graph != null)
-        {
-            Graph.Clear();
-        }
+        Graph.Clear();
     }
 
     public void Generate()
     {
         if (Graph == null)
-            Graph = new();
+            Graph = new(this);
         if (Rules == null)
             Rules = new();
 
@@ -190,13 +185,11 @@ public partial class PrettyDunGen3DGenerator : Node3D
         {
             chunk = new PrettyDunGen3DChunk(this, coordinates);
             Graph.AddNode(chunk);
-            AddChild(chunk);
+
+            // Note: Below works because Graph also adds the Chunk to this generators Child-List.
             chunk.Resize(DefaultChunkSize, DefaultChunkOffset);
             chunk.Rotation = Vector3.Zero;
             chunk.Scale = Vector3.One;
-
-            if (PersistGenerated)
-                chunk.Owner = this;
         }
 
         return chunk;

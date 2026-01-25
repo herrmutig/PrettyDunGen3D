@@ -34,6 +34,9 @@ public partial class PrettyDunGen3DChunk : Node3D
     public Array<PrettyDunGen3DChunk> Neighbours { get; private set; } = new();
 
     [Export]
+    public Array<PrettyDunGen3DChunkConnector> Connectors { get; private set; } = new();
+
+    [Export]
     public Vector3 NeighbourForwardDistance { get; private set; }
 
     [Export]
@@ -145,10 +148,13 @@ public partial class PrettyDunGen3DChunk : Node3D
         return deltaDir.Sign() * (deltaDir.Abs() - combinedHalfExtent);
     }
 
-    private Vector3 GetConnectorCenter(PrettyDunGen3DChunk neighbour)
+    public Vector3 GetConnectorCenter(PrettyDunGen3DChunk neighbour, bool local = false)
     {
         Vector3 distance = GetDistanceVectorTo(neighbour);
         Vector3 halfExtent = Size * 0.5f;
+
+        if (local)
+            return (halfExtent * distance.Sign()) + distance * 0.5f;
 
         return GlobalPosition + (halfExtent * distance.Sign()) + distance * 0.5f;
     }
@@ -208,6 +214,30 @@ public partial class PrettyDunGen3DChunk : Node3D
         // Note: This is BTW super helpful to update connection points (Corridors)
         Neighbours.Clear();
         Neighbours.AddRange(graph.GetNeighbours(this));
+    }
+
+    // Adds a Connector that represents a connection between this chunk and another chunk
+    // Created by Graph AddEdge...
+    public bool AddConnector(PrettyDunGen3DChunkConnector connector)
+    {
+        if (!connector.IsConnectedToChunk(this))
+            return false;
+
+        if (!Connectors.Contains(connector))
+            Connectors.Add(connector);
+
+        return true;
+    }
+
+    public PrettyDunGen3DChunkConnector GetConnector(PrettyDunGen3DChunk chunk)
+    {
+        foreach (var connector in Connectors)
+        {
+            if (connector.IsConnectedToChunk(chunk))
+                return connector;
+        }
+
+        return null;
     }
 
     private void DrawDebug()

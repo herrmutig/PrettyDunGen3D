@@ -29,10 +29,9 @@ public partial class PrettyRoomPlanner : Node3D
 
     public override void _Ready()
     {
-        if (HasMeta("pd3d_chunk"))
+        if (HasMeta("pd3d_size"))
         {
-            PrettyDunGen3DChunk chunk = (PrettyDunGen3DChunk)GetMeta("pd3d_chunk");
-            Size = chunk.Size;
+            Size = (Vector3)GetMeta("pd3d_size");
             Generate();
         }
     }
@@ -43,6 +42,12 @@ public partial class PrettyRoomPlanner : Node3D
 
         if (SceneInstanceDictionary == null)
             SceneInstanceDictionary = new();
+
+        if (Size.X < 0 || Size.Y < 0 || Size.Z < 0)
+        {
+            GD.PushWarning($"Cancelled Generation: Can not generate a room with Size: {Size}");
+            return;
+        }
 
         foreach (var child in GetChildren())
         {
